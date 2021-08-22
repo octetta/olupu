@@ -1,0 +1,68 @@
+#!/bin/sh
+# the next line restarts using tclsh \
+exec ./tclkit "$0" ${1+"$@"}
+
+package require Tclx
+
+set keeppath $::env(PATH)
+set ::env(PATH) [pwd]
+
+if {$argv == ""} {
+    puts "start again with the # of the audio output device you want to use"
+    set chan [open "|pd -stderr -nogui -listdev 2>@1" r]
+    set id [pid $chan]
+
+    #fconfigure $chan -buffering line
+
+    set show 0
+    while {1} {
+        after 25
+        if {[fblocked $chan]} {
+            puts "blocked, break-ing..."
+            break
+        }
+        if {[gets $chan line] < 0} {break}
+        if {$line == ""} {continue}
+        set line [string tolower $line]
+        if {[string first output $line] >= 0} {set show 1}
+        if {[string first microphone $line] >= 0} {continue}
+        if {[string first api $line] >= 0} {continue}
+        if {[string first midi $line] >= 0} {break}
+        if {$show == 1} {puts "$line"}
+    }
+    kill $id
+    catch {close $chan} err
+    #puts "got err=$err"
+    exit 0
+}
+
+set output [lindex $argv 0]
+
+puts "pd will use audio output #$output"
+
+set chan [open "|pd -stderr -nogui -nomidi -noadc -audiooutdev $output loopy.pd 2>@1" r]
+set id [pid $chan]
+
+set running 1
+
+signal trap SIGINT {
+    puts "\nyou hit ctrl-c"
+    puts "cleaning up..."
+    set running 0
+}
+
+while {$running} {
+    puts "pd($id) has pending log messages [chan pending input $chan]"
+    sleep 5
+}
+
+puts "restore environment..."
+set ::env(PATH) $keeppath
+
+puts "kill pd/$id..."
+kill $id
+
+puts "close pd/$chan..."
+catch {close $chan} err
+
+exit 0
