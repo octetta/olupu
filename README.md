@@ -16,8 +16,10 @@ make
 ```
 
 ## use public kitcreator tool to build tclkit
-http://kitcreator.rkeene.org/kits/building/a56ce7a079da9ae4a9a70ffac55d9f29afc1f39d/
-and with the following options
+http://kitcreator.rkeene.org/kitcreator
+
+with the following options
+
 * kitcreator version 0.12.1
 * tcl version 8.6.11
 * platform Mac OS X/amd64
